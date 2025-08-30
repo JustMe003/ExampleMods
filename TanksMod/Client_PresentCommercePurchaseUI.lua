@@ -93,7 +93,15 @@ function CompletePurchaseClicked()
 	local payload = 'BuyTank_' .. SelectedTerritory.ID;
 
 	local orders = Game.Orders;
-	table.insert(orders, WL.GameOrderCustom.Create(Game.Us.ID, msg, payload,  { [WL.ResourceType.Gold] = Mod.Settings.CostToBuyTank } ));
+	local custom = WL.GameOrderCustom.Create(Game.Us.ID, msg, payload,  { [WL.ResourceType.Gold] = Mod.Settings.CostToBuyTank }, WL.TurnPhase.Deploys + 1);
+	for i, order in pairs(orders) do
+        if order.OccursInPhase ~= nil and order.OccursInPhase > custom.OccursInPhaseOpt then
+            index = i;
+            break;
+        end
+    end
+    if index == 0 then index = #orders + 1; end
+	table.insert(orders, index, custom);
 	Game.Orders = orders;
 
 	Close2();
