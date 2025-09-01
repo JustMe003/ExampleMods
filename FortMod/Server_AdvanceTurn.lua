@@ -33,15 +33,34 @@ function Server_AdvanceTurn_Order(game, order, result, skipThisOrder, addNewOrde
 
 	--Check if this is an attack against a territory with a fort.
 	if (order.proxyType == 'GameOrderAttackTransfer' and result.IsAttack) then
+		local structureID = WL.StructureType.Custom("Fort"); --matches to StructureImages/Fort.png
+		local backcompatStructureID = WL.StructureType.ArmyCamp; --since we used to use army camps in earlier versions, we treat Army Camps as forts
+
 		local structures = game.ServerGame.LatestTurnStanding.Territories[order.To].Structures;
 
 		--If no fort here, abort.
 		if (structures == nil) then return; end;
-		if (structures[WL.StructureType.ArmyCamp] == nil) then return; end;
-		if (structures[WL.StructureType.ArmyCamp] <= 0) then return; end;
+
+		local numFortsHere = 0;
+		if (structures[structureID] ~= nil) then
+			numFortsHere = numFortsHere + structures[structureID];
+		end
+		if (structures[backcompatStructureID] ~= nil) then
+			numFortsHere = numFortsHere + structures[backcompatStructureID];
+		end
+
+		--If no fort here, abort.
+		if (numFortsHere == 0) then return; end;
+
+		--If an attack of 0, abort, so skipped orders don't destroy the fort
+		if (result.ActualArmies.IsEmpty) then return; end;
 
 		--Attack found against a fort!  Cancel the attack and remove the fort.
-		structures[WL.StructureType.ArmyCamp] = structures[WL.StructureType.ArmyCamp] - 1;
+		if (structures[backcompatStructureID] ~= nil and structures[backcompatStructureID] > 0) then
+			structures[backcompatStructureID] = structures[backcompatStructureID] - 1;
+		else
+			structures[structureID] = structures[structureID] - 1;
+		end
 
 		local terrMod = WL.TerritoryModification.Create(order.To);
 		terrMod.SetStructuresOpt = structures;
@@ -65,7 +84,8 @@ end
 
 function BuildForts(game, addNewOrder)
 	--Build any forts that we queued in up Server_AdvanceTurn_Order
-	
+	local structureID = WL.StructureType.Custom("Fort"); --matches to StructureImages/Fort.png
+
 	local priv = Mod.PrivateGameData;
 	local pending = priv.PendingForts;
 	if (pending == nil) then return; end;
@@ -81,19 +101,29 @@ function BuildForts(game, addNewOrder)
 
 		local structures = game.ServerGame.LatestTurnStanding.Territories[territoryID].Structures;
 
+
 		if (structures == nil) then structures = {}; end;
-		if (structures[WL.StructureType.ArmyCamp] == nil) then
-			structures[WL.StructureType.ArmyCamp] = numFortsToBuildHere;
+		if (structures[structureID] == nil) then
+			structures[structureID] = numFortsToBuildHere;
 		else
-			structures[WL.StructureType.ArmyCamp] = structures[WL.StructureType.ArmyCamp] + numFortsToBuildHere;
+			structures[structureID] = structures[structureID] + numFortsToBuildHere;
 		end
-	
+
 		local terrMod = WL.TerritoryModification.Create(territoryID);
 		terrMod.SetStructuresOpt = structures;
 
 		local pendingFort = first(pendingFortGroup);
 	
-		addNewOrder(WL.GameOrderEvent.Create(pendingFort.PlayerID, pendingFort.Message, {}, {terrMod}));
+		local event = WL.GameOrderEvent.Create(pendingFort.PlayerID, pendingFort.Message, {}, {terrMod});
+
+		local td = game.Map.Territories[territoryID];
+		event.JumpToActionSpotOpt = WL.RectangleVM.Create(td.MiddlePointX, td.MiddlePointY, td.MiddlePointX, td.MiddlePointY);
+		if (WL.IsVersionOrHigher("5.34.1")) then
+			event.TerritoryAnnotationsOpt = { [territoryID] = WL.TerritoryAnnotation.Create("Build Fort") };
+		end
+
+
+		addNewOrder(event);
 	end
 
 	priv.PendingForts = nil;

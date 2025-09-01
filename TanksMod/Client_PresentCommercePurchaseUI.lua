@@ -69,6 +69,10 @@ function SelectTerritoryClicked()
 end
 
 function TerritoryClicked(terrDetails)
+	if UI.IsDestroyed(SelectTerritoryBtn) then
+		-- Dialog was destroyed, so we don't need to intercept the click anymore
+		return WL.CancelClickIntercept; 
+	end
 	SelectTerritoryBtn.SetInteractable(true);
 
 	if (terrDetails == nil) then
@@ -91,6 +95,13 @@ end
 function CompletePurchaseClicked()
 	local msg = 'Buy a tank on ' .. SelectedTerritory.Name;
 	local payload = 'BuyTank_' .. SelectedTerritory.ID;
+
+	local order = WL.GameOrderCustom.Create(Game.Us.ID, msg, payload,  { [WL.ResourceType.Gold] = Mod.Settings.CostToBuyTank } );
+
+	if (WL.IsVersionOrHigher("5.34.1")) then
+		order.JumpToActionSpotOpt = WL.RectangleVM.Create(SelectedTerritory.MiddlePointX, SelectedTerritory.MiddlePointY, SelectedTerritory.MiddlePointX, SelectedTerritory.MiddlePointY);
+		order.TerritoryAnnotationsOpt = { [SelectedTerritory.ID] = WL.TerritoryAnnotation.Create("Purchase Tank") };
+	end
 
 	local orders = Game.Orders;
 	local custom = WL.GameOrderCustom.Create(Game.Us.ID, msg, payload,  { [WL.ResourceType.Gold] = Mod.Settings.CostToBuyTank }, WL.TurnPhase.Deploys + 1);

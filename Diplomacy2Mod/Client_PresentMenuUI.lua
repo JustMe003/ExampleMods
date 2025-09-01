@@ -22,6 +22,9 @@ function Client_PresentMenuUI(rootParent, setMaxSize, setScrollable, game, close
 	else
 		--Render all alliances that involve us first
 		local ourAlliances = filter(alliances, function(alliance) return game.Us ~= nil and (alliance.PlayerOne == game.Us.ID or alliance.PlayerTwo == game.Us.ID) end);
+		if game.Game.TurnNumber < 1 and #ourAlliances > 0 then
+			UI.CreateLabel(vert).SetText("You can cancel alliances after the distribution phase");
+		end
 		for _,alliance in pairs(ourAlliances) do
 			local otherPlayerID
 			if alliance.PlayerOne == game.Us.ID then
@@ -37,7 +40,7 @@ function Client_PresentMenuUI(rootParent, setMaxSize, setScrollable, game, close
 			UI.CreateButton(horz).SetText("Break").SetOnClick(function() 
 				BreakAlliance(otherPlayerID, otherPlayerName);
 				close();
-			end);
+			end).SetInteractable(game.Game.TurnNumber >= 1);
 		end
 
 			
