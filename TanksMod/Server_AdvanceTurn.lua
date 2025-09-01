@@ -53,6 +53,12 @@ function Server_AdvanceTurn_Order(game, order, orderResult, skipThisOrder, addNe
 		builder.CanBeAirliftedToSelf = true;
 		builder.CanBeAirliftedToTeammate = true;
 		builder.IsVisibleToAllPlayers = false;
+
+		-- All units that will be created will contain the same string, Therefore we should not create it here
+		-- They should all point to the same memory location, because this will save resources
+		if Mod.Settings.ModData ~= nil then
+			builder.ModData = Mod.Settings.ModData;
+		end
 	
 		local terrMod = WL.TerritoryModification.Create(targetTerritoryID);
 		terrMod.AddSpecialUnits = {builder.Build()};

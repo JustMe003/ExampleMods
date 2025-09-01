@@ -3,6 +3,7 @@ require('WLUtilities');
 
 function Client_PresentMenuUI(rootParent, setMaxSize, setScrollable, game)
 	Game = game;
+	Phase = WL.TurnPhase.Purchase;
 
 	setMaxSize(450, 250);
 	root = rootParent;
@@ -148,8 +149,6 @@ function SubmitClicked()
 		custom.JumpToActionSpotOpt = WL.RectangleVM.Create(SelectedTerritory.MiddlePointX, SelectedTerritory.MiddlePointY, SelectedTerritory.MiddlePointX, SelectedTerritory.MiddlePointY);
 		custom.TerritoryAnnotationsOpt = { [SelectedTerritory.ID] = WL.TerritoryAnnotation.Create("Buy Neutral") };
 	end
-
-
 
 	local orders = Game.Orders;
 	local index = 0;
